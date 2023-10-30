@@ -2055,6 +2055,7 @@ def MHLO_BitcastConvertOp : MHLO_ShapedInterfaceOp<"bitcast_convert",
   let results = (outs MHLO_Tensor);
   let hasVerifier = 1;
   let hasCustomHLOConverter = 1;
+  let hasFolder = 1;
 
   let assemblyFormat = "operands attr-dict `:` functional-type(operands, results)";
 }

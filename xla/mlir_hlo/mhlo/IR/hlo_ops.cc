@@ -2171,6 +2171,14 @@ LogicalResult BitcastConvertOp::verify() {
   return hlo::verifyBitcastConvertOp(getLoc(), getOperand(), getResult());
 }
 
+OpFoldResult BitcastConvertOp::fold(FoldAdaptor adaptor) {
+  auto type = getType().cast<RankedTensorType>();
+  if (type == getOperand().getType()) {
+    return getOperand();
+  }
+  return {};
+}
+
 //===----------------------------------------------------------------------===//
 // BroadcastOp
 //===----------------------------------------------------------------------===//

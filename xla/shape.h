@@ -17,6 +17,7 @@ limitations under the License.
 #define XLA_SHAPE_H_
 
 #include <cstdint>
+#include <limits>
 #include <optional>
 #include <ostream>
 #include <string>
@@ -25,12 +26,12 @@ limitations under the License.
 
 #include "absl/container/inlined_vector.h"
 #include "absl/types/span.h"
+#include "tsl/platform/logging.h"  // IWYU pragma: keep
 #include "xla/layout.h"
 #include "xla/primitive_util.h"
 #include "xla/printer.h"
 #include "xla/util.h"
 #include "xla/xla_data.pb.h"
-#include "tsl/platform/logging.h"  // IWYU pragma: keep
 
 namespace xla {
 
@@ -90,6 +91,28 @@ class Shape {
   bool is_static() const;
 
   bool is_dynamic() const { return !is_static(); }
+
+  // Unbounded dynamism.
+  // If `dimensions(axis) == kUnboundedSize && is_dynamic_dimension(axis)`,
+  // this means that the axis has unbounded dynamic size.
+  // The sentinel value for kUnboundedSize is chosen to be exactly the same
+  // as the sentinel value mlir::ShapedType::kDynamic.
+  static constexpr int64_t kUnboundedSize = std::numeric_limits<int64_t>::min();
+
+  // Returns true if the shape has one or more dimensions with unbounded sizes.
+  // Tuple shapes are traversed recursively.
+  bool is_unbounded_dynamic() const;
+
+  // Returns true if the given dimension is unbounded dynamic.
+  bool is_unbounded_dynamic_dimension(int dimension) const {
+    return dimensions_.at(dimension) == kUnboundedSize;
+  }
+
+  // Sets a given dimension as unbounded dynamic.
+  void set_unbounded_dynamic_dimension(int dimension) {
+    dynamic_dimensions_[dimension] = true;
+    dimensions_.at(dimension) = kUnboundedSize;
+  }
 
   // Returns true if the given dimension is dynamically-sized.
   bool is_dynamic_dimension(int dimension) const {
