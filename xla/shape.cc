@@ -22,13 +22,13 @@ limitations under the License.
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "tsl/platform/logging.h"  // IWYU pragma: keep
 #include "xla/layout.h"
 #include "xla/layout_util.h"
 #include "xla/primitive_util.h"
 #include "xla/printer.h"
 #include "xla/shape_util.h"
 #include "xla/xla_data.pb.h"
+#include "tsl/platform/logging.h"  // IWYU pragma: keep
 
 namespace xla {
 

@@ -28,14 +28,14 @@ limitations under the License.
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/raw_ostream.h"
-#include "mlir/AsmParser/AsmParser.h"      // from @llvm-project
+#include "mlir/AsmParser/AsmParser.h"  // from @llvm-project
 #include "mlir/Dialect/Func/IR/FuncOps.h"  // from @llvm-project
-#include "mlir/IR/Attributes.h"            // from @llvm-project
-#include "mlir/IR/Builders.h"              // from @llvm-project
-#include "mlir/IR/BuiltinTypes.h"          // from @llvm-project
-#include "mlir/IR/IRMapping.h"             // from @llvm-project
-#include "mlir/IR/Location.h"              // from @llvm-project
-#include "mlir/IR/Region.h"                // from @llvm-project
+#include "mlir/IR/Attributes.h"  // from @llvm-project
+#include "mlir/IR/Builders.h"  // from @llvm-project
+#include "mlir/IR/BuiltinTypes.h"  // from @llvm-project
+#include "mlir/IR/IRMapping.h"  // from @llvm-project
+#include "mlir/IR/Location.h"  // from @llvm-project
+#include "mlir/IR/Region.h"  // from @llvm-project
 #include "stablehlo/dialect/ChloOps.h"
 #include "tsl/platform/statusor.h"
 #include "xla/comparison_util.h"
@@ -870,7 +870,6 @@ StatusOr<mlir::Operation*> HloFunctionImporter::ImportInstructionImpl(
     }
     case HloOpcode::kCustomCall: {
       auto custom_call = Cast<HloCustomCallInstruction>(instruction);
-      // llvm::errs() << "Custom_call: " << custom_call->ToString() << "\n";
       if (custom_call->custom_call_target() ==
           "stablehlo.dynamic_broadcast_in_dim") {
         std::vector<int64_t> broadcast_dimensions(
@@ -899,42 +898,6 @@ StatusOr<mlir::Operation*> HloFunctionImporter::ImportInstructionImpl(
             .getOperation();
       }
 
-      // if (custom_call->custom_call_target() ==
-      //     "chlo.broadcast_maximum") {
-      //   auto* op = func_builder
-      //                  ->create<mlir::chlo::BroadcastMaxOp>(
-      //                      loc, result_type, operands,
-      //                       attributes)
-      //                  .getOperation();
-      //   if (op == nullptr) return op;
-      //   op->dump();
-      //   return op;
-      // }
-      // if (custom_call->custom_call_target() ==
-      //     "shape.shape_of") {
-      //   auto* op = func_builder
-      //                  ->create<mlir::shape::ShapeOfOp>(
-      //                      loc,
-      //                      RankedTensorType::get(/*shape=*/result_type.cast<RankedTensorType>().getShape(),
-      //                       func_builder->getIndexType()), operands,
-      //                       attributes)
-      //                  .getOperation();
-      //   if (op == nullptr) return op;
-      //   op->dump();
-      //   return op;
-      // }
-
-      // if (custom_call->custom_call_target() ==
-      //     "shape.num_elements") {
-      //   auto* op = func_builder
-      //                  ->create<mlir::shape::NumElementsOp>(
-      //                      loc, func_builder->getIndexType(), operands,
-      //                      attributes)
-      //                  .getOperation();
-      //   if (op == nullptr) return op;
-      //   op->dump();
-      //   return op;
-      // }
       const auto& called_computations = custom_call->called_computations();
       if (!called_computations.empty()) {
         llvm::SmallVector<mlir::Attribute> callees;

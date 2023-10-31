@@ -36,10 +36,6 @@ limitations under the License.
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "tsl/platform/errors.h"
-#include "tsl/platform/logging.h"
-#include "tsl/platform/status.h"
-#include "tsl/platform/statusor.h"
 #include "xla/hlo/ir/hlo_opcode.h"
 #include "xla/permutation_util.h"
 #include "xla/primitive_util.h"
@@ -51,6 +47,10 @@ limitations under the License.
 #include "xla/util.h"
 #include "xla/window_util.h"
 #include "xla/xla_data.pb.h"
+#include "tsl/platform/errors.h"
+#include "tsl/platform/logging.h"
+#include "tsl/platform/status.h"
+#include "tsl/platform/statusor.h"
 
 namespace xla {
 namespace {
@@ -859,7 +859,6 @@ Status ValidateDotDimensionNumbers(
 ShapeInference::InferDegenerateDimensionBroadcastShape(HloOpcode operation,
                                                        const Shape& lhs,
                                                        const Shape& rhs) {
-  std::cout << "InferDegenerateDimensionBroadcastShape: ";
   TF_RET_CHECK(lhs.rank() == rhs.rank());
 
   // The shapes have to be compatible. That is, if some dimension d has a
@@ -915,14 +914,12 @@ ShapeInference::InferDegenerateDimensionBroadcastShape(HloOpcode operation,
   auto ret_shape =
       ShapeUtil::MakeShape(ShapeUtil::HigherPrecisionElementType(lhs, rhs),
                            output_dimensions, output_dimensions_is_dynamic);
-  std::cout << ShapeUtil::HumanString(ret_shape) << "\n";
   return ret_shape;
 }
 
 /* static */ StatusOr<Shape> ShapeInference::InferInDimBroadcastShape(
     const Shape& smaller_shape, const Shape& larger_shape,
     absl::Span<const int64_t> broadcast_dimensions) {
-  std::cout << "InferInDimBroadcastShape: ";
   if (smaller_shape.is_unbounded_dynamic() ||
       larger_shape.is_unbounded_dynamic()) {
     return InvalidArgument(
@@ -1043,14 +1040,12 @@ ShapeInference::InferDegenerateDimensionBroadcastShape(HloOpcode operation,
     output_shape.set_dynamic_dimension(dimension_to_match, small_is_dynamic);
   }
 
-  std::cout << ShapeUtil::HumanString(output_shape) << "\n";
   return output_shape;
 }
 
 /* static */ StatusOr<Shape> ShapeInference::InferElementwiseBinaryOpShape(
     HloOpcode operation, const Shape& lhs, const Shape& rhs,
     absl::Span<const int64_t> broadcast_dimensions) {
-  std::cout << "ShapeInference::InferElementwiseBinaryOpShape\n";
   TF_RETURN_IF_ERROR(ExpectArray(lhs, "lhs of elementwise binary operation"));
   TF_RETURN_IF_ERROR(ExpectArray(rhs, "rhs of elementwise binary operation"));
 
@@ -1122,7 +1117,6 @@ ShapeInference::InferDegenerateDimensionBroadcastShape(HloOpcode operation,
 /* static */ StatusOr<Shape> ShapeInference::InferBinaryOpShape(
     HloOpcode opcode, const Shape& lhs, const Shape& rhs,
     absl::Span<const int64_t> broadcast_dimensions) {
-  std::cout << "ShapeInference::InferBinaryOpShape\n";
   VLOG(2) << StrFormat(
       "inferring shape for <%s>(%s, %s) with broadcast_dimensions={%s}",
       HloOpcodeString(opcode), ShapeUtil::HumanStringWithLayout(lhs),
@@ -1453,11 +1447,10 @@ ShapeInference::InferDegenerateDimensionBroadcastShape(HloOpcode operation,
   std::vector<bool> inferred_dynamic_dimensions;
   InferMostSpecificShape({&feature_shape, &scale_shape, &offset_shape},
                          inferred_shape, inferred_dynamic_dimensions);
-  // TODO(gunhyun): Merge conflict?
-  // bool dynamic_feature = operand_shape.is_dynamic_dimension(feature_index);
+  bool dynamic_feature = operand_shape.is_dynamic_dimension(feature_index);
   Shape output_shape_for_mean_and_var =
       ShapeUtil::MakeShape(operand_shape.element_type(), {feature_count},
-                           {operand_shape.is_dynamic_dimension(feature_index)});
+                           {dynamic_feature});
 
   if (!CompatibleDimensionSizes(ShapeUtil::GetDimension(offset_shape, 0),
                                 inferred_shape[0])) {
@@ -2520,7 +2513,6 @@ ShapeInference::InferDegenerateDimensionBroadcastShape(HloOpcode operation,
   std::vector<bool> inferred_dynamic_dimensions;
   InferMostSpecificShape(operands, inferred_shape, inferred_dynamic_dimensions);
   for (int64_t i = 1; i < number_of_input; ++i) {
-    // if (!ShapeUtil::SameDimensions(*operands[0], *operands[i])) {
     if (!CompatibleDimensionSizes(inferred_shape[i],
                                   operands[i]->dimensions(i))) {
       return InvalidArgument(

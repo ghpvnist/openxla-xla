@@ -209,7 +209,6 @@ TEST_F(XlaBuilderTest, ParamPlusParamHasBroadcast) {
   EXPECT_TRUE(ShapeUtil::Equal(add_shape, x_shape));
 
   TF_ASSERT_OK_AND_ASSIGN(auto module, BuildHloModule(&b));
-  std::cout << module->ToString();
   auto root = module->entry_computation()->root_instruction();
   EXPECT_THAT(
       root, GmockMatch(m::Add(m::Parameter(0), m::Broadcast(m::Parameter(1)))));

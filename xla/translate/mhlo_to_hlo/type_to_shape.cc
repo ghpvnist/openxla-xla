@@ -21,13 +21,13 @@ limitations under the License.
 #include <tuple>
 #include <vector>
 
-#include "mlir/Dialect/SparseTensor/IR/Enums.h"         // from @llvm-project
+#include "mlir/Dialect/SparseTensor/IR/Enums.h"  // from @llvm-project
 #include "mlir/Dialect/SparseTensor/IR/SparseTensor.h"  // from @llvm-project
-#include "mlir/IR/AffineMap.h"                          // from @llvm-project
-#include "mlir/IR/BuiltinTypes.h"                       // from @llvm-project
-#include "mlir/IR/Diagnostics.h"                        // from @llvm-project
-#include "mlir/IR/Location.h"                           // from @llvm-project
-#include "mlir/Support/DebugStringHelper.h"             // from @llvm-project
+#include "mlir/IR/AffineMap.h"  // from @llvm-project
+#include "mlir/IR/BuiltinTypes.h"  // from @llvm-project
+#include "mlir/IR/Diagnostics.h"  // from @llvm-project
+#include "mlir/IR/Location.h"  // from @llvm-project
+#include "mlir/Support/DebugStringHelper.h"  // from @llvm-project
 #include "xla/mlir_hlo/mhlo/IR/hlo_ops.h"
 #include "xla/primitive_util.h"
 #include "xla/shape_util.h"
