@@ -36,6 +36,9 @@ limitations under the License.
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "tsl/platform/errors.h"
+#include "tsl/platform/status.h"
+#include "tsl/platform/statusor.h"
 #include "xla/comparison_util.h"
 #include "xla/hlo/ir/dfs_hlo_visitor_with_default.h"
 #include "xla/hlo/ir/dynamic_parameter_binding.h"
@@ -63,9 +66,6 @@ limitations under the License.
 #include "xla/util.h"
 #include "xla/window_util.h"
 #include "xla/xla_data.pb.h"
-#include "tsl/platform/errors.h"
-#include "tsl/platform/status.h"
-#include "tsl/platform/statusor.h"
 
 namespace xla {
 
@@ -233,6 +233,11 @@ class DynamicDimensionInferenceVisitor : public DfsHloRewriteVisitor {
 
   void SetDynamicSizes(HloInstruction* inst, const ShapeIndex& index,
                        absl::Span<HloInstruction* const> sizes);
+
+  Status HandleDynamicBroadcastInDim(HloInstruction* hlo,
+                                     int64_t operand_index,
+                                     int64_t dimension,
+                                     HloInstruction* dynamic_size);
 
   Status HandleDynamicConvolutionForward(HloInstruction* hlo,
                                          int64_t operand_index,
@@ -531,6 +536,11 @@ Status DynamicDimensionInferenceVisitor::HandleCustomCall(HloInstruction* hlo) {
           if (hlo->custom_call_target() == "DynamicConvolutionForward") {
             return HandleDynamicConvolutionForward(hlo, operand_index,
                                                    dimension, dynamic_size);
+          }
+
+          if (hlo->custom_call_target() == "stablehlo.dynamic_broadcast_in_dim") {
+            return HandleDynamicBroadcastInDim(hlo, operand_index, dimension,
+                                               dynamic_size);
           }
           return Unimplemented(
               "CustomCall \"%s\" is not supported to have a dynamic dimension",
@@ -970,6 +980,12 @@ Status DynamicDimensionInferenceVisitor::HandleSetDimensionSize(
         return OkStatus();
       }));
 
+  return OkStatus();
+}
+
+Status DynamicDimensionInferenceVisitor::HandleDynamicBroadcastInDim(
+  HloInstruction* hlo, int64_t operand_index, int64_t dimension,
+  HloInstruction* dynamic_size) {
   return OkStatus();
 }
 
