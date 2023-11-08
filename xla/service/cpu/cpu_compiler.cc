@@ -863,13 +863,14 @@ Status CpuCompiler::RunHloPassesThroughLayoutAssn(
     pipeline.AddPass<SubByteNormalization>(
         SubByteNormalization::SET_ELEMENT_SIZE);
   }
-
+  std::cout << "RUN pipeline\n";
   return pipeline.Run(module).status();
 }
 
 Status CpuCompiler::RunHloPassesAfterLayoutAssn(
     HloModule* module, bool is_aot_compile,
     LLVMTargetMachineFeatures* target_machine_features, bool is_mlir_compile) {
+  std::cout << "RunHloPassesAfterLayoutAssn1\n";
   HloPassPipeline pipeline("HLO passes after layout assignment");
 
   // CopyInsertion is still needed by BufferAssignment. MLIR passes will handle
@@ -879,6 +880,7 @@ Status CpuCompiler::RunHloPassesAfterLayoutAssn(
     pipeline.AddPass<CopyInsertion>();
     return pipeline.Run(module).status();
   }
+  std::cout << "RunHloPassesAfterLayoutAssn2\n";
 
   {
     HloPassPipeline normalization_pipeline("hlo normalization");
@@ -887,12 +889,13 @@ Status CpuCompiler::RunHloPassesAfterLayoutAssn(
     normalization_pipeline.AddPass<BroadcastCanonicalizer>();
     TF_RETURN_IF_ERROR(normalization_pipeline.Run(module).status());
   }
+  std::cout << "RunHloPassesAfterLayoutAssn3\n";
 
   // After layout assignment, use a layout-sensitive verifier.
   pipeline.AddPass<HloPassPipeline>("after layout assignment");
   AddHloVerifier(&pipeline, allow_sparse_shapes_,
                  HloVerifierOpts{}.MakeLayoutSensitive(), /*debug_only=*/true);
-
+  std::cout << "RunHloPassesAfterLayoutAssn4\n";
   pipeline.AddPass<ReshapeDecomposer>();
 
   // Add a fusion pass now that layout assignment is done.
@@ -904,6 +907,7 @@ Status CpuCompiler::RunHloPassesAfterLayoutAssn(
   [&pipeline = pipeline.AddPass<HloPassFix<HloPassPipeline>>(
        "simplification after layout assignment"),
    this] {
+    std::cout << "RunHloPassesAfterLayoutAssn5\n";
     AddHloVerifier(
         &pipeline, allow_sparse_shapes_,
         HloVerifierOpts{}.MakeLayoutSensitive().WithInstructionCanChangeLayout(
@@ -920,6 +924,7 @@ Status CpuCompiler::RunHloPassesAfterLayoutAssn(
     pipeline.AddPass<HloDCE>();
     pipeline.AddPass<HloCSE>(/*is_layout_sensitive=*/true);
   }();
+  std::cout << "RunHloPassesAfterLayoutAssn6\n";
 
   // Outline ops in the entry computation into calls to subcomputations.
   const int max_parallelism =
@@ -950,10 +955,12 @@ Status CpuCompiler::RunHloPassesAfterLayoutAssn(
 Status CpuCompiler::RunHloPasses(HloModule* module, bool is_aot_compile,
                                  llvm::TargetMachine* target_machine,
                                  bool is_mlir_compile) {
+  std::cout << "RunHloPasses?1\n";
   LLVMTargetMachineFeatures target_machine_features(target_machine);
+  std::cout << "RunHloPasses?2\n";
   TF_RETURN_IF_ERROR(RunHloPassesThroughLayoutAssn(
       module, is_aot_compile, &target_machine_features, is_mlir_compile));
-
+  std::cout << "RunHloPasses?3\n";
   return RunHloPassesAfterLayoutAssn(module, is_aot_compile,
                                      &target_machine_features, is_mlir_compile);
 }
@@ -1071,15 +1078,17 @@ Status CreateHloProfilingArtifacts(
 StatusOr<std::unique_ptr<HloModule>> CpuCompiler::RunHloPasses(
     std::unique_ptr<HloModule> module, se::StreamExecutor* /*stream_exec*/,
     const CompileOptions& /*options*/) {
+  std::cout << "RunHloPasses1\n";
   std::unique_ptr<llvm::TargetMachine> jit_target_machine =
       SimpleOrcJIT::InferTargetMachineForJIT(
           CompilerTargetOptions(module->config()),
           CodeGenOptLevel(module->config()));
-
+  std::cout << "RunHloPasses2\n";
   TF_RETURN_IF_ERROR(RunHloPasses(
       module.get(), /*is_aot_compile=*/false, jit_target_machine.get(),
       /*is_mlir_compile=*/
       module->config().debug_options().xla_cpu_use_xla_runtime()));
+  std::cout << "RunHloPasses3\n";
   return std::move(module);
 }
 

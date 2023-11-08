@@ -3058,6 +3058,7 @@ PjRtStreamExecutorClient::GetExecutableExtras(CompileOptions* options) {
 StatusOr<std::unique_ptr<PjRtLoadedExecutable>>
 PjRtStreamExecutorClient::Compile(const XlaComputation& computation,
                                   CompileOptions options) {
+  std::cout << "Client Compile1\n";
   tsl::profiler::TraceMe traceme("PjRtStreamExecutorClient::Compile");
   VLOG(1) << "PjRtStreamExecutorClient::Compile";
   auto input_options = options;
@@ -3065,12 +3066,13 @@ PjRtStreamExecutorClient::Compile(const XlaComputation& computation,
   TF_RETURN_IF_ERROR(options.ApplyAllOptionOverrides());
 
   TF_ASSIGN_OR_RETURN(ExecutableExtras extras, GetExecutableExtras(&options));
+  std::cout << "Client Compile2\n";
   std::shared_ptr<DeviceAssignment>& device_assignment =
       extras.device_assignment;
   std::vector<PjRtStreamExecutorLoadedExecutable::LogicalDeviceIds>&
       addressable_device_logical_ids = extras.addressable_device_logical_ids;
   std::vector<PjRtDevice*>& addressable_devices = extras.addressable_devices;
-
+  std::cout << "Client Compile3\n";
   std::vector<const Shape*> argument_layout_pointers;
   TF_RETURN_IF_ERROR(DetermineArgumentLayoutsFromCompileOptions(
       computation,
@@ -3081,12 +3083,12 @@ PjRtStreamExecutorClient::Compile(const XlaComputation& computation,
       },
       options.argument_layouts, &options.executable_build_options,
       &argument_layout_pointers));
-
+  std::cout << "Client Compile4\n";
   TF_ASSIGN_OR_RETURN(
       std::vector<std::unique_ptr<LocalExecutable>> local_executables,
       client()->Compile(computation, argument_layout_pointers,
                         options.executable_build_options));
-
+  std::cout << "Client Compile5\n";
   auto executable = std::make_unique<PjRtStreamExecutorLoadedExecutable>(
       std::move(local_executables), options.parameter_is_tupled_arguments,
       std::move(device_assignment), std::move(input_options),
@@ -3095,6 +3097,7 @@ PjRtStreamExecutorClient::Compile(const XlaComputation& computation,
 
   TF_RETURN_IF_ERROR(
       executable->SetUpDonation(options.parameter_is_tupled_arguments));
+  std::cout << "Client Compile6\n";
   return std::unique_ptr<PjRtLoadedExecutable>(std::move(executable));
 }
 

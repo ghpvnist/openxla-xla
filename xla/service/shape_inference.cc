@@ -36,6 +36,10 @@ limitations under the License.
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "tsl/platform/errors.h"
+#include "tsl/platform/logging.h"
+#include "tsl/platform/status.h"
+#include "tsl/platform/statusor.h"
 #include "xla/hlo/ir/hlo_opcode.h"
 #include "xla/permutation_util.h"
 #include "xla/primitive_util.h"
@@ -47,10 +51,6 @@ limitations under the License.
 #include "xla/util.h"
 #include "xla/window_util.h"
 #include "xla/xla_data.pb.h"
-#include "tsl/platform/errors.h"
-#include "tsl/platform/logging.h"
-#include "tsl/platform/status.h"
-#include "tsl/platform/statusor.h"
 
 namespace xla {
 namespace {
@@ -191,16 +191,16 @@ StatusOr<Shape> InferWindowOutputShape(const Shape& base_shape,
       return InvalidArgument("Window %s has a non-positive dimension.",
                              window.DebugString());
     }
-    if (dim.stride() <= 0) {
+    if (dim.stride() <= 0 && !IsUnboundedDynamicSize(dim.stride())) {
       return InvalidArgument("Window %s has a non-positive stride.",
                              window.DebugString());
     }
-    if (dim.base_dilation() < 1) {
+    if (dim.base_dilation() < 1 && !IsUnboundedDynamicSize(dim.base_dilation())) {
       return InvalidArgument(
           "Window %s has a non-positive base area dilation factor.",
           window.DebugString());
     }
-    if (dim.window_dilation() < 1) {
+    if (dim.window_dilation() < 1 && !IsUnboundedDynamicSize(dim.window_dilation())) {
       return InvalidArgument(
           "Window %s has a non-positive window dilation factor.",
           window.DebugString());
@@ -1448,9 +1448,8 @@ ShapeInference::InferDegenerateDimensionBroadcastShape(HloOpcode operation,
   InferMostSpecificShape({&feature_shape, &scale_shape, &offset_shape},
                          inferred_shape, inferred_dynamic_dimensions);
   bool dynamic_feature = operand_shape.is_dynamic_dimension(feature_index);
-  Shape output_shape_for_mean_and_var =
-      ShapeUtil::MakeShape(operand_shape.element_type(), {feature_count},
-                           {dynamic_feature});
+  Shape output_shape_for_mean_and_var = ShapeUtil::MakeShape(
+      operand_shape.element_type(), {feature_count}, {dynamic_feature});
 
   if (!CompatibleDimensionSizes(ShapeUtil::GetDimension(offset_shape, 0),
                                 inferred_shape[0])) {
@@ -2762,7 +2761,8 @@ ShapeInference::InferDegenerateDimensionBroadcastShape(HloOpcode operation,
     if (start_index < 0) {
       return InvalidArgument("Negative start index to slice: %d.", start_index);
     }
-    if (limit_index > arg.dimensions(dimension)) {
+    if (limit_index > arg.dimensions(dimension) &&
+        !arg.is_unbounded_dynamic_dimension(dimension)) {
       return error(
           StrFormat("limit index (%d) must be less than or equal to dimension "
                     "size (%d)",

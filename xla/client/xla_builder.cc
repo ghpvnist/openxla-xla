@@ -975,9 +975,9 @@ XlaOp XlaBuilder::BinaryOp(HloOpcode binop, XlaOp lhs, XlaOp rhs,
     if (lhs_rank != rhs_rank && (lhs_shape->is_unbounded_dynamic() ||
                                  rhs_shape->is_unbounded_dynamic())) {
       auto broadcasted_lhs = xla::CustomCall(
-          lhs.builder(), "DynamicBroadcastInDimUnresolved", {lhs}, shape);
+          lhs.builder(), "stablehlo.dynamic_broadcast_in_dim", {lhs}, shape);
       auto broadcasted_rhs = xla::CustomCall(
-          rhs.builder(), "DynamicBroadcastInDimUnresolved", {rhs}, shape);
+          rhs.builder(), "stablehlo.dynamic_broadcast_in_dim", {rhs}, shape);
       return BinaryOpNoBroadcast(binop, shape, broadcasted_lhs,
                                  broadcasted_rhs);
     }

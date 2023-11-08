@@ -565,6 +565,7 @@ static StatusOr<std::unique_ptr<xla::Executable>> JitCompile(
     const absl::Span<const Shape* const> argument_layouts,
     const ExecutableBuildOptions& build_options,
     const ExecutionOptions& execution_options) {
+  std::cout << "JIT1\n";
   TF_ASSIGN_OR_RETURN(ProgramShape program_shape,
                       computation.GetProgramShape());
   // Unoptimized HloModuleConfig.
@@ -577,29 +578,34 @@ static StatusOr<std::unique_ptr<xla::Executable>> JitCompile(
 
   // Unoptimized HloModule.
   const xla::HloModuleProto& hlo_module_proto = computation.proto();
+  std::cout << "JIT2\n";
   TF_ASSIGN_OR_RETURN(
       std::unique_ptr<HloModule> hlo_module,
       xla::HloModule::CreateFromProto(hlo_module_proto, *hlo_module_config));
   VLOG(3) << "Unoptimized HLO module: " << hlo_module->ToString();
   static constexpr char kBeforeOptimizationsDumpName[] = "before_optimizations";
   DumpHloModuleIfEnabled(*hlo_module, kBeforeOptimizationsDumpName);
-
+  std::cout << "JIT3\n";
   // Run Hlo Passes
   bool allow_sparse_shapes =
       hlo_module->config().debug_options().xla_cpu_use_xla_runtime();
+  std::cout << "JIT4\n";
   cpu::CpuCompiler compiler(allow_sparse_shapes);
   xla::Compiler::CompileOptions dummy;
+  std::cout << "JIT5\n";
   TF_ASSIGN_OR_RETURN(hlo_module,
                       compiler.RunHloPasses(std::move(hlo_module),
                                             /*stream_exec=*/nullptr, dummy));
-
+  std::cout << "JIT6\n";
   // Run backend.
+  // std::cout << hlo_module->ToString();
   return compiler.RunBackend(std::move(hlo_module), /*stream_exec=*/nullptr,
                              dummy);
 }
 
 StatusOr<std::unique_ptr<PjRtLoadedExecutable>> TfrtCpuClient::Compile(
     const XlaComputation& computation, CompileOptions options) {
+  std::cout << "TFRT1\n";
   tsl::profiler::TraceMe traceme("TfrtCpuClient::Compile");
   auto input_options = options;
   ExecutableBuildOptions& build_options = options.executable_build_options;
@@ -609,18 +615,19 @@ StatusOr<std::unique_ptr<PjRtLoadedExecutable>> TfrtCpuClient::Compile(
   int num_replicas;
   int num_partitions;
   std::shared_ptr<DeviceAssignment> device_assignment;
+  std::cout << "TFRT2\n";
   TF_RETURN_IF_ERROR(ParseDeviceAssignmentCompileOptions(
       options.compile_portable_executable, &options.executable_build_options,
       [this](int num_replicas, int num_partitions) {
         return this->GetDefaultDeviceAssignment(num_replicas, num_partitions);
       },
       &num_replicas, &num_partitions, &device_assignment));
-
+  std::cout << "TFRT3\n";
   std::vector<const Shape*> argument_layout_pointers;
   TF_RETURN_IF_ERROR(DetermineArgumentLayoutsFromCompileOptions(
       computation, &LayoutUtil::GetWithDefaultLayout, options.argument_layouts,
       &options.executable_build_options, &argument_layout_pointers));
-
+  std::cout << "TFRT4\n";
   std::vector<PjRtLoadedExecutable::LogicalDeviceIds>
       addressable_device_logical_ids;
   std::vector<PjRtDevice*> addressable_devices;
@@ -653,31 +660,35 @@ StatusOr<std::unique_ptr<PjRtLoadedExecutable>> TfrtCpuClient::Compile(
           addressable_devices.front()->local_hardware_id());
     }
   }
+  std::cout << "TFRT5\n";
 
   TF_ASSIGN_OR_RETURN(ProgramShape program_shape,
                       computation.GetProgramShape());
+  std::cout << "TFRT5.5\n";
   ExecutionOptions execution_options =
       CreateExecutionOptions(build_options, &program_shape);
+  std::cout << "TFRT5.6\n";
   TF_ASSIGN_OR_RETURN(std::unique_ptr<Executable> cpu_executable,
                       JitCompile(computation, argument_layout_pointers,
                                  build_options, execution_options));
+  std::cout << "TFRT6\n";
   auto cpu_executable_ptr =
       tensorflow::down_cast<cpu::CpuExecutable*>(cpu_executable.get());
-
+  std::cout << "TFRT7\n";
   // `buffer_table[result_slice.index()]` points to result buffer:
   // If output is a tuple, it points to the buffer index table.
   // If output is a non-tuple, it points to the buffer itself.
   TF_ASSIGN_OR_RETURN(
       const BufferAllocation::Slice result_slice,
       cpu_executable_ptr->buffer_assignment().GetUniqueTopLevelOutputSlice());
-
+  std::cout << "TFRT8\n";
   // `result_buffer_indices` has the buffer allocation indices that make up the
   // output buffer (could be tuple).
   TF_ASSIGN_OR_RETURN(
       auto result_buffer_indices,
       FindResultBufferAllocationIndex(cpu_executable_ptr->buffer_assignment(),
                                       cpu_executable->module()));
-
+  std::cout << "TFRT9\n";
   auto executable = std::make_unique<TfrtCpuExecutable>(
       num_replicas, num_partitions, std::move(device_assignment),
       options.parameter_is_tupled_arguments, std::move(input_options),
@@ -685,14 +696,16 @@ StatusOr<std::unique_ptr<PjRtLoadedExecutable>> TfrtCpuClient::Compile(
       std::move(result_buffer_indices),
       std::move(addressable_device_logical_ids), std::move(addressable_devices),
       this);
+  std::cout << "TFRT10\n";
   TF_RETURN_IF_ERROR(
       executable->SetUpDonation(options.parameter_is_tupled_arguments));
-
+  std::cout << "TFRT11\n";
   return std::unique_ptr<PjRtLoadedExecutable>(std::move(executable));
 }
 
 StatusOr<std::unique_ptr<PjRtLoadedExecutable>> TfrtCpuClient::Compile(
     mlir::ModuleOp module, CompileOptions options) {
+  std::cout << "TFRT?\n";
   XlaComputation xla_computation;
   TF_RETURN_IF_ERROR(MlirToXlaComputation(
       module, xla_computation,

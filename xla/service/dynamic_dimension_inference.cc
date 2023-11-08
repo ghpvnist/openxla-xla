@@ -234,8 +234,7 @@ class DynamicDimensionInferenceVisitor : public DfsHloRewriteVisitor {
   void SetDynamicSizes(HloInstruction* inst, const ShapeIndex& index,
                        absl::Span<HloInstruction* const> sizes);
 
-  Status HandleDynamicBroadcastInDim(HloInstruction* hlo,
-                                     int64_t operand_index,
+  Status HandleDynamicBroadcastInDim(HloInstruction* hlo, int64_t operand_index,
                                      int64_t dimension,
                                      HloInstruction* dynamic_size);
 
@@ -538,7 +537,8 @@ Status DynamicDimensionInferenceVisitor::HandleCustomCall(HloInstruction* hlo) {
                                                    dimension, dynamic_size);
           }
 
-          if (hlo->custom_call_target() == "stablehlo.dynamic_broadcast_in_dim") {
+          if (hlo->custom_call_target() ==
+              "stablehlo.dynamic_broadcast_in_dim") {
             return HandleDynamicBroadcastInDim(hlo, operand_index, dimension,
                                                dynamic_size);
           }
@@ -984,8 +984,12 @@ Status DynamicDimensionInferenceVisitor::HandleSetDimensionSize(
 }
 
 Status DynamicDimensionInferenceVisitor::HandleDynamicBroadcastInDim(
-  HloInstruction* hlo, int64_t operand_index, int64_t dimension,
-  HloInstruction* dynamic_size) {
+    HloInstruction* hlo, int64_t operand_index, int64_t dimension,
+    HloInstruction* dynamic_size) {
+  if (!CanInfer(hlo)) {
+    return OkStatus();
+  }
+  TF_RET_CHECK(operand_index == 0);
   return OkStatus();
 }
 
